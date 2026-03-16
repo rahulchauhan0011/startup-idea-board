@@ -16,18 +16,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Startup Idea Board",
   description:
-    "A friendly place to share startup ideas, browse, vote, and learn from each other.",
+    "A calm, focused space to share startup ideas and see what resonates.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-slate-950`}
       >
         <AppShell>{children}</AppShell>
       </body>
