@@ -3,7 +3,7 @@ import type { InstantRules } from "@instantdb/react";
 const rules = {
   "**": {
     allow: {
-      read: "true",
+      view: "true",
       create: "isLoggedIn",
       update: "isLoggedIn",
       delete: "isLoggedIn",
