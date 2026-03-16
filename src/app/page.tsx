@@ -70,8 +70,20 @@ function IdeaCard({
   signedIn: boolean;
   onToggleVote: () => void;
 }) {
+  async function handleShare() {
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/ideas/${idea.id}`
+        : `/ideas/${idea.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // ignore
+    }
+  }
+
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.08)] transition-transform transition-shadow duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(15,23,42,0.14)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <Link
@@ -80,35 +92,46 @@ function IdeaCard({
           >
             {idea.title}
           </Link>
-          <div className="mt-2 text-sm leading-6 text-zinc-700">
+          <div className="mt-2 text-sm leading-6 text-slate-700">
             {idea.description}
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <CategoryPill category={idea.category} />
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-slate-500">
               {new Date(idea.createdAt).toLocaleDateString()}
             </span>
           </div>
         </div>
 
-        <div className="shrink-0 text-right">
-          <div className="text-xs font-semibold text-zinc-500">Votes</div>
-          <div className="mt-1 text-2xl font-bold text-zinc-900">
-            {voteCount}
+        <div className="flex shrink-0 flex-col items-stretch gap-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Votes
+            </div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">
+              {voteCount}
+            </div>
+            <button
+              type="button"
+              onClick={onToggleVote}
+              className={[
+                "mt-2 inline-flex h-8 w-full items-center justify-center rounded-full text-[11px] font-semibold transition",
+                signedIn
+                  ? voted
+                    ? "bg-slate-900/5 text-slate-900 hover:bg-slate-900/10"
+                    : "bg-slate-900 text-slate-50 hover:bg-black"
+                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              {signedIn ? (voted ? "Voted" : "Upvote") : "Log in to vote"}
+            </button>
           </div>
           <button
             type="button"
-            onClick={onToggleVote}
-            className={[
-              "mt-2 inline-flex h-9 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
-              signedIn
-                ? voted
-                  ? "bg-teal-50 text-teal-800 hover:bg-teal-100"
-                  : "bg-teal-600 text-white hover:bg-teal-700"
-                : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50",
-            ].join(" ")}
+            onClick={() => void handleShare()}
+            className="inline-flex h-8 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
           >
-            {signedIn ? (voted ? "Voted" : "Upvote") : "Log in to vote"}
+            Share
           </button>
         </div>
       </div>
@@ -130,7 +153,7 @@ function BrowseIdeasPage() {
 
   const userId = getUserId(user);
 
-  const { ideas, voteCountByIdeaId, voteByKey } = useMemo(() => {
+  const { ideas, voteCountByIdeaId, voteByKey, trending } = useMemo(() => {
     const q = data as unknown as { ideas?: Idea[]; votes?: Vote[] };
     const raw = q?.ideas ?? [];
     const rawVotes = q?.votes ?? [];
@@ -158,10 +181,20 @@ function BrowseIdeasPage() {
       return (b.createdAt ?? 0) - (a.createdAt ?? 0);
     });
 
+    const trending = [...raw]
+      .sort((a, b) => {
+        const av = counts.get(a.id) ?? 0;
+        const bv = counts.get(b.id) ?? 0;
+        if (bv !== av) return bv - av;
+        return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+      })
+      .slice(0, 3) as Idea[];
+
     return {
       ideas: sorted as Idea[],
       voteCountByIdeaId: counts,
       voteByKey: byKey,
+      trending,
     };
   }, [data, category, sort]);
 
@@ -249,6 +282,46 @@ function BrowseIdeasPage() {
               : "You can browse without logging in. Log in to post and vote."}
         </div>
       </section>
+
+      {trending.length > 0 && (
+        <section className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
+                Trending today
+              </h2>
+              <p className="text-[11px] text-zinc-500">
+                Top 3 ideas by votes across all categories.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {trending.map((idea) => (
+              <div
+                key={idea.id}
+                className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/ideas/${idea.id}`}
+                    className="block truncate text-sm font-semibold tracking-tight text-zinc-900 hover:underline"
+                  >
+                    {idea.title}
+                  </Link>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500">
+                    <span>{idea.category}</span>
+                    <span>•</span>
+                    <span>
+                      {voteCountByIdeaId.get(idea.id) ?? 0}{" "}
+                      {voteCountByIdeaId.get(idea.id) === 1 ? "vote" : "votes"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {isLoading ? (
         <div className="grid gap-3">

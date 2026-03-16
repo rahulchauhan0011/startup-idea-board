@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import db from "../../lib/db";
 import { id } from "@instantdb/react";
@@ -47,7 +47,49 @@ export default function NewIdeaPage() {
           authorId: userId,
         })
       );
-      router.push(`/ideas/${ideaId}`);
+      // Simple confetti-like burst using the Web Animations API
+      try {
+        const canvasId = "confetti-layer";
+        let canvas = document.getElementById(canvasId) as HTMLDivElement | null;
+        if (!canvas) {
+          canvas = document.createElement("div");
+          canvas.id = canvasId;
+          canvas.className =
+            "pointer-events-none fixed inset-0 z-[1000] overflow-hidden";
+          document.body.appendChild(canvas);
+        }
+        const particles = 60;
+        for (let i = 0; i < particles; i++) {
+          const dot = document.createElement("div");
+          dot.className =
+            "absolute h-1.5 w-1.5 rounded-full bg-teal-400 shadow-sm";
+          dot.style.left = "50%";
+          dot.style.top = "50%";
+          canvas.appendChild(dot);
+          const angle = (Math.PI * 2 * i) / particles;
+          const distance = 80 + Math.random() * 80;
+          const dx = Math.cos(angle) * distance;
+          const dy = Math.sin(angle) * distance;
+          dot.animate(
+            [
+              { transform: "translate(0,0)", opacity: 1 },
+              { transform: `translate(${dx}px, ${dy}px)`, opacity: 0 },
+            ],
+            {
+              duration: 900 + Math.random() * 400,
+              easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+              fill: "forwards",
+            }
+          ).onfinish = () => {
+            dot.remove();
+          };
+        }
+        setTimeout(() => {
+          router.push(`/ideas/${ideaId}`);
+        }, 400);
+      } catch {
+        router.push(`/ideas/${ideaId}`);
+      }
     } catch (e: unknown) {
       setError(errorMessage(e, "Could not post your idea. Please try again."));
     } finally {
