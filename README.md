@@ -2,7 +2,7 @@
 A full-stack web application for submitting, browsing, and discovering 
 startup ideas — built from scratch with no prior coding experience.
 
-🔗 **[View Live App](YOUR_DEPLOYMENT_URL_HERE)**
+🔗 **[View Live App](https://startup-idea-board-4k8p.vercel.app/)**
 
 ---
 
